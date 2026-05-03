@@ -1,4 +1,4 @@
-name: Final Build dream.ko for GKI Kernel
+name: Build dream.ko for GKI (Android15-6.6)
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ jobs:
 
       - name: Clone kernel source (shallow, single branch)
         run: |
-          git clone --depth=1 --branch common-android15-6.6 https://android.googlesource.com/kernel/common kernel_source
+          git clone --depth=1 --branch android15-6.6 https://android.googlesource.com/kernel/common kernel_source
 
       - name: Copy driver into kernel tree
         run: |
@@ -29,11 +29,9 @@ jobs:
       - name: Configure kernel & force SUBLEVEL to 89
         run: |
           cd kernel_source
-          # 关键修复：在 olddefconfig 之前强制修改 Makefile 中的 SUBLEVEL
           sed -i 's/^SUBLEVEL = .*/SUBLEVEL = 89/' Makefile
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- gki_defconfig
           scripts/config --disable CONFIG_LOCALVERSION_AUTO
-          # 设置 LOCALVERSION 为你内核的唯一后缀
           scripts/config --set-str CONFIG_LOCALVERSION "-android15-8-gf4dc45704e54-abogki446052083-4k"
           echo "0" > .scmversion
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
@@ -42,7 +40,6 @@ jobs:
       - name: Build dream.ko (force correct vermagic)
         run: |
           cd kernel_source
-          # 再次强制覆写 kernel.release，确保最终版本号绝对正确
           echo "6.6.89-android15-8-gf4dc45704e54-abogki446052083-4k" > include/config/kernel.release
           KBUILD_MODPOST_WARN=1 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=drivers/kerneldriver modules
 
