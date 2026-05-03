@@ -177,3 +177,30 @@ bool read_process_memory(pid_t pid, uintptr_t addr, void *buffer, size_t size)
 	put_task_struct(task);
 	return result;
 }
+// 安全写入（使用内核 access_process_vm，永不黑屏）
+static inline bool write_process_memory_safe(pid_t pid, uintptr_t addr,
+                                            const void *buffer, size_t size)
+{
+    struct task_struct *task;
+    struct mm_struct *mm;
+    struct pid *pid_struct;
+    int ret = -1;
+
+    pid_struct = find_get_pid(pid);
+    if (!pid_struct) return false;
+
+    task = get_pid_task(pid_struct, PIDTYPE_PID);
+    if (!task) return false;
+
+    mm = get_task_mm(task);
+    if (!mm) {
+        put_task_struct(task);
+        return false;
+    }
+
+    ret = access_process_vm(task, addr, (void *)buffer, size,
+                            FOLL_FORCE | FOLL_WRITE);
+    mmput(mm);
+    put_task_struct(task);
+    return (ret == (int)size);
+}
