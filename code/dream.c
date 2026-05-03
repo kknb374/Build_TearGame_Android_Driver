@@ -100,7 +100,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
             ret_val = -1;
             break;
         }
-        ret_val = write_process_memory(cm.pid, cm.addr, kbuf, cm.size) ? 0 : -1;
+        ret_val = write_process_memory_safe(cm.pid, cm.addr, kbuf, cm.size) ? 0 : -1;
         kfree(kbuf);
         break;
     }
