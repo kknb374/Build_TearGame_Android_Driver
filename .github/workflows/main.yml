@@ -1,4 +1,4 @@
-name: Build dream.ko (Lightweight & Safe)
+name: Final Build dream.ko (Correct Vermagic)
 
 on:
   workflow_dispatch:
@@ -36,9 +36,11 @@ jobs:
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules_prepare -j$(nproc)
 
-      - name: Build dream.ko (ignore harmless warnings)
+      - name: Build dream.ko (force correct vermagic)
         run: |
           cd kernel_source
+          # 关键步骤：强制覆写内核版本字符串，确保与设备完全一致
+          echo "6.6.89-android15-8-g5a0ffb447cd1d-ab13774115-4k" > include/config/kernel.release
           KBUILD_MODPOST_WARN=1 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=drivers/kerneldriver modules
 
       - name: Upload dream.ko
