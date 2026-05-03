@@ -1,4 +1,4 @@
-name: Final Build dream.ko (Sublevel Fix)
+name: Build dream.ko for Xiaomi 13 (5.15)
 
 on:
   workflow_dispatch:
@@ -15,9 +15,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git-core flex bison gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libssl-dev bc
 
-      - name: Clone kernel source (shallow, single branch)
+      - name: Clone kernel source (5.15 Android 13)
         run: |
-          git clone --depth=1 --branch android15-6.6 https://android.googlesource.com/kernel/common kernel_source
+          git clone --depth=1 --branch android13-5.15-lts https://android.googlesource.com/kernel/common kernel_source
 
       - name: Copy driver into kernel tree
         run: |
@@ -26,14 +26,13 @@ jobs:
           cd kernel_source
           echo 'obj-y += kerneldriver/' >> drivers/Makefile
 
-      - name: Configure kernel & force SUBLEVEL to 89
+      - name: Configure kernel & force SUBLEVEL to 74
         run: |
           cd kernel_source
-          # ===== 关键修复：在 olddefconfig 之前强制修改 Makefile 中的 SUBLEVEL =====
-          sed -i 's/^SUBLEVEL = .*/SUBLEVEL = 89/' Makefile
+          sed -i 's/^SUBLEVEL = .*/SUBLEVEL = 74/' Makefile
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- gki_defconfig
           scripts/config --disable CONFIG_LOCALVERSION_AUTO
-          scripts/config --set-str CONFIG_LOCALVERSION "-android15-8-g5a0ffb447cd1d-ab13774115-4k"
+          scripts/config --set-str CONFIG_LOCALVERSION "-android13-8-00049-g8945ccdb2203-ab9500309"
           echo "0" > .scmversion
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- modules_prepare -j$(nproc)
@@ -41,8 +40,7 @@ jobs:
       - name: Build dream.ko (force correct vermagic)
         run: |
           cd kernel_source
-          # 再次强制覆写 kernel.release，确保最终版本号绝对正确
-          echo "6.6.89-android15-8-g5a0ffb447cd1d-ab13774115-4k" > include/config/kernel.release
+          echo "5.15.74-android13-8-00049-g8945ccdb2203-ab9500309" > include/config/kernel.release
           KBUILD_MODPOST_WARN=1 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- M=drivers/kerneldriver modules
 
       - name: Upload dream.ko
